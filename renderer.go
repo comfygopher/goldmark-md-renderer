@@ -127,8 +127,6 @@ func (r *Renderer) renderBlockquote(w util.BufWriter, source []byte, node ast.No
 				return ast.WalkContinue, nil
 			})
 		}
-	} else {
-		_ = w.WriteByte('\n')
 	}
 	return ast.WalkContinue, nil
 }
@@ -142,7 +140,7 @@ func (r *Renderer) renderCodeBlock(w util.BufWriter, source []byte, node ast.Nod
 			_, _ = w.Write(line.Value(source))
 		}
 	} else {
-		_, _ = w.WriteString("\n```\n")
+		_, _ = w.WriteString("```\n\n")
 	}
 	return ast.WalkContinue, nil
 }
@@ -160,7 +158,7 @@ func (r *Renderer) renderFencedCodeBlock(w util.BufWriter, source []byte, node a
 			_, _ = w.Write(line.Value(source))
 		}
 	} else {
-		_, _ = w.WriteString("\n```\n")
+		_, _ = w.WriteString("```\n\n")
 	}
 	return ast.WalkContinue, nil
 }
@@ -178,7 +176,10 @@ func (r *Renderer) renderHTMLBlock(w util.BufWriter, source []byte, node ast.Nod
 
 func (r *Renderer) renderList(w util.BufWriter, source []byte, node ast.Node, entering bool) (ast.WalkStatus, error) {
 	if !entering {
-		_, _ = w.WriteString("\n")
+		parent := node.Parent()
+		if parent != nil && parent.Kind() != ast.KindListItem {
+			_, _ = w.WriteString("\n")
+		}
 	}
 	return ast.WalkContinue, nil
 }
@@ -206,6 +207,11 @@ func (r *Renderer) renderListItem(w util.BufWriter, source []byte, node ast.Node
 			_, _ = w.WriteString("- ")
 		}
 	} else {
+		//if first child is TextBlock then don't add new line:
+		firstChild := node.FirstChild()
+		if firstChild.Kind() == ast.KindTextBlock && firstChild.NextSibling() != nil && firstChild.FirstChild() != nil {
+			return ast.WalkContinue, nil
+		}
 		_, _ = w.WriteString("\n")
 	}
 	return ast.WalkContinue, nil
@@ -219,7 +225,8 @@ func (r *Renderer) renderParagraph(w util.BufWriter, source []byte, node ast.Nod
 }
 
 func (r *Renderer) renderTextBlock(w util.BufWriter, source []byte, node ast.Node, entering bool) (ast.WalkStatus, error) {
-	if !entering {
+	if entering {
+	} else {
 		if node.NextSibling() != nil && node.FirstChild() != nil {
 			_ = w.WriteByte('\n')
 		}
@@ -229,7 +236,10 @@ func (r *Renderer) renderTextBlock(w util.BufWriter, source []byte, node ast.Nod
 
 func (r *Renderer) renderThematicBreak(w util.BufWriter, source []byte, node ast.Node, entering bool) (ast.WalkStatus, error) {
 	if entering {
-		_, _ = w.WriteString("---\n")
+		// In Markdown, a thematic break (horizontal rule) can be represented by three or more
+		// hyphens, asterisks, or underscores, optionally with spaces between them.
+		// We'll use three hyphens followed by a newline.
+		_, _ = w.WriteString("---\n\n")
 	}
 	return ast.WalkContinue, nil
 }

@@ -11,23 +11,22 @@ import (
 
 func TestRenderer(t *testing.T) {
 	markdown := `# Heading 1
-
 ## Heading 2
-
 This is a paragraph with **bold** and *italic* text.
 
 - List item 1
 - List item 2
   - Nested list item
+    - Nested 2
 
 1. Ordered list item 1
-2. Ordered list item 2
+1. Ordered list item 2
 
 > This is a blockquote
 
 ` + "```go" + `
 func main() {
-	fmt.Println("Hello, world!")
+    fmt.Println("Hello, world!")
 }
 ` + "```" + `
 
@@ -38,7 +37,6 @@ func main() {
 ---
 
 <div>Raw HTML</div>
-
 `
 
 	md := goldmark.New(
@@ -57,4 +55,7 @@ func main() {
 	}
 
 	t.Logf("Rendered markdown:\n%s", buf.String())
+	if buf.String() != markdown {
+		t.Errorf("Rendered markdown does not match input")
+	}
 }
