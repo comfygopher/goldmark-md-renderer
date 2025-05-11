@@ -1,12 +1,11 @@
-package mdrend
+package revmd
 
 import (
 	"bytes"
+	"github.com/yuin/goldmark/testutil"
 	"testing"
 
 	"github.com/yuin/goldmark"
-	"github.com/yuin/goldmark/renderer"
-	"github.com/yuin/goldmark/util"
 )
 
 func TestThematicBreakRenderer(t *testing.T) {
@@ -14,29 +13,21 @@ func TestThematicBreakRenderer(t *testing.T) {
 
 ---
 
-After the break`
+After the break
 
-	// Create a custom renderer that only uses our Markdown renderer
-	customRenderer := renderer.NewRenderer(
-		renderer.WithNodeRenderers(
-			util.Prioritized(NewRenderer(), 1000),
-		),
-	)
+`
 
-	md := goldmark.New(
-		goldmark.WithRenderer(customRenderer),
-	)
+	md := goldmark.New(goldmark.WithExtensions(MainRendererExt))
 
 	var buf bytes.Buffer
 	if err := md.Convert([]byte(markdown), &buf); err != nil {
 		t.Fatalf("Failed to convert markdown: %v", err)
 	}
 
-	output := buf.String()
-	t.Logf("Rendered markdown:\n%s", output)
-
-	// Check that the thematic break is rendered correctly
-	if !bytes.Contains(buf.Bytes(), []byte("---")) {
-		t.Errorf("Expected output to contain '---', but got: %s", output)
+	if buf.String() != markdown {
+		t.Errorf(
+			"Rendered markdown does not match input:\n%s",
+			testutil.DiffPretty([]byte(markdown), buf.Bytes()),
+		)
 	}
 }

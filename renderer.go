@@ -1,8 +1,7 @@
-package mdrend
+package revmd
 
 import (
 	"github.com/yuin/goldmark/ast"
-	ext "github.com/yuin/goldmark/extension/ast"
 	"github.com/yuin/goldmark/renderer"
 	"github.com/yuin/goldmark/util"
 )
@@ -80,15 +79,6 @@ func (r *Renderer) RegisterFuncs(reg renderer.NodeRendererFuncRegisterer) {
 	reg.Register(ast.KindString, r.renderString)
 	r.nodeRendererFuncMap[ast.KindString] = r.renderString
 
-	// extension nodes
-	reg.Register(ext.KindDefinitionList, r.renderDefinitionList)
-	r.nodeRendererFuncMap[ext.KindDefinitionList] = r.renderDefinitionList
-
-	reg.Register(ext.KindDefinitionTerm, r.renderDefinitionTerm)
-	r.nodeRendererFuncMap[ext.KindDefinitionTerm] = r.renderDefinitionTerm
-
-	reg.Register(ext.KindDefinitionDescription, r.renderDefinitionDescription)
-	r.nodeRendererFuncMap[ext.KindDefinitionDescription] = r.renderDefinitionDescription
 }
 
 func (r *Renderer) renderDocument(w util.BufWriter, source []byte, node ast.Node, entering bool) (ast.WalkStatus, error) {
@@ -324,14 +314,14 @@ func (r *Renderer) renderLink(w util.BufWriter, source []byte, node ast.Node, en
 
 func (r *Renderer) renderRawHTML(w util.BufWriter, source []byte, node ast.Node, entering bool) (ast.WalkStatus, error) {
 	if !entering {
-		return ast.WalkContinue, nil
+		return ast.WalkSkipChildren, nil
 	}
 	n := node.(*ast.RawHTML)
 	for i := 0; i < n.Segments.Len(); i++ {
 		segment := n.Segments.At(i)
 		_, _ = w.Write(segment.Value(source))
 	}
-	return ast.WalkContinue, nil
+	return ast.WalkSkipChildren, nil
 }
 
 func (r *Renderer) renderText(w util.BufWriter, source []byte, node ast.Node, entering bool) (ast.WalkStatus, error) {
@@ -371,34 +361,5 @@ func (r *Renderer) renderNode(w util.BufWriter, source []byte, node ast.Node, en
 		return r(w, source, node, entering)
 	}
 	// If we don't have a renderer for this node kind, just continue walking
-	return ast.WalkContinue, nil
-}
-
-// Definition List rendering methods
-
-func (r *Renderer) renderDefinitionList(w util.BufWriter, source []byte, node ast.Node, entering bool) (ast.WalkStatus, error) {
-	// For definition lists, we don't need to add any special formatting at the list level
-	// The terms and descriptions will handle their own formatting
-	if !entering {
-		_, _ = w.WriteString("\n")
-	}
-	return ast.WalkContinue, nil
-}
-
-func (r *Renderer) renderDefinitionTerm(w util.BufWriter, source []byte, node ast.Node, entering bool) (ast.WalkStatus, error) {
-	// For definition terms, we just render the content and add a newline at the end
-	if !entering {
-		_, _ = w.WriteString("\n")
-	}
-	return ast.WalkContinue, nil
-}
-
-func (r *Renderer) renderDefinitionDescription(w util.BufWriter, source []byte, node ast.Node, entering bool) (ast.WalkStatus, error) {
-	// For definition descriptions, we add the colon and space at the beginning
-	if entering {
-		_, _ = w.WriteString(": ")
-	} else {
-		_, _ = w.WriteString("\n")
-	}
 	return ast.WalkContinue, nil
 }
